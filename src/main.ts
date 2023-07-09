@@ -1,4 +1,4 @@
-import { Plugin } from "obsidian";
+import { MarkdownView, Plugin } from "obsidian";
 
 export default class ExamplePlugin extends Plugin {
   async onload() {
@@ -89,6 +89,19 @@ export default class ExamplePlugin extends Plugin {
               `${new Date().toISOString()}.webm`,
               await blob.arrayBuffer(),
             );
+
+            // Insert into editor
+            const editor =
+              this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
+            if (editor) {
+              const cursor = editor.getCursor();
+              const content = "Oh look it's working!";
+              editor.replaceRange(content, cursor);
+              editor.setCursor({
+                line: cursor.line,
+                ch: cursor.ch + content.length,
+              });
+            }
           });
 
           isInitializing = false;
