@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
+    "install": "cmake-js compile",
     "dev": "node esbuild.config.mjs",
     "build": "tsc && node esbuild.config.mjs production",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css,json,md,yaml}\""
