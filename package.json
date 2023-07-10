@@ -10,6 +10,7 @@
   "devDependencies": {
     "@types/node": "20.4.1",
     "builtin-modules": "3.3.0",
+    "cmake-js": "7.2.1",
     "esbuild": "0.18.11",
     "obsidian": "1.2.8",
     "prettier": "3.0.0",
