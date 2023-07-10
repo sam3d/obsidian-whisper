@@ -17,6 +17,9 @@ devDependencies:
   esbuild:
     specifier: 0.18.11
     version: 0.18.11
+  node-addon-api:
+    specifier: 7.0.0
+    version: 7.0.0
   obsidian:
     specifier: 1.2.8
     version: 1.2.8(@codemirror/state@6.2.1)(@codemirror/view@6.14.1)
@@ -590,6 +593,10 @@ packages:
 
   /ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
+    dev: true
+
+  /node-addon-api@7.0.0:
+    resolution: {integrity: sha512-vgbBJTS4m5/KkE16t5Ly0WW9hz46swAstv0hYYwMtbG7AznRhNyfLRe8HZAiWIpcHzoO7HxhLuBQj9rJ/Ho0ZA==}
     dev: true
 
   /node-api-headers@0.0.2:

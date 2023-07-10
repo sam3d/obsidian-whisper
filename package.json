@@ -13,6 +13,7 @@
     "builtin-modules": "3.3.0",
     "cmake-js": "7.2.1",
     "esbuild": "0.18.11",
+    "node-addon-api": "7.0.0",
     "obsidian": "1.2.8",
     "prettier": "3.0.0",
     "prettier-plugin-organize-imports": "3.2.2",
