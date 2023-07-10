@@ -3,6 +3,9 @@ set (CMAKE_CXX_STANDARD 11)
 
 project(whisper-addon)
 
+set(WHISPER_COREML ON CACHE INTERNAL "enable Core ML framework")
+set(WHISPER_COREML_ALLOW_FALLBACK ON CACHE INTERNAL "allow non-CoreML fallback")
+
 include(FetchContent)
 FetchContent_Declare(
   whisper.cpp
