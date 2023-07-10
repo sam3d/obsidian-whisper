@@ -1,14 +1,13 @@
 import { MarkdownView, Plugin } from "obsidian";
 
-type RecordingState =
-  | { status: "idle" }
-  | { status: "initializing" }
-  | { status: "recording"; startedAt: number }
-  | { status: "closing" };
+type RecorderState =
+  | { state: "idle" }
+  | { state: "initializing" }
+  | { state: "recording"; startedAt: number; instance: MediaRecorder }
+  | { state: "closing" };
 
 export default class ExamplePlugin extends Plugin {
-  private recorder: MediaRecorder | null = null;
-  private recordingState: RecordingState = { status: "idle" };
+  private recorder: RecorderState = { state: "idle" };
   private statusBarEl = this.addStatusBarItem();
 
   async onload() {
@@ -19,14 +18,13 @@ export default class ExamplePlugin extends Plugin {
       name: "Toggle recording",
       hotkeys: [{ modifiers: ["Alt"], key: "Q" }],
       callback: () => {
-        console.log(this.recordingState);
-        switch (this.recordingState.status) {
+        switch (this.recorder.state) {
           case "idle":
             this.startRecording();
             break;
 
           case "recording":
-            this.recorder?.stop();
+            this.recorder.instance.stop();
             break;
         }
       },
@@ -36,9 +34,9 @@ export default class ExamplePlugin extends Plugin {
   private renderStatusBar() {
     const el = this.statusBarEl;
 
-    if (this.recordingState.status === "recording") {
+    if (this.recorder.state === "recording") {
       const now = new Date().getTime();
-      const elapsed = now - this.recordingState.startedAt;
+      const elapsed = now - this.recorder.startedAt;
 
       const totalSeconds = Math.floor(elapsed / 1000);
       const minutes = Math.floor(totalSeconds / 60);
@@ -52,28 +50,32 @@ export default class ExamplePlugin extends Plugin {
       return;
     }
 
-    el.innerText = "Whisper " + this.recordingState.status;
+    el.innerText = "Whisper " + this.recorder.state;
   }
 
   private async startRecording() {
-    this.recordingState = { status: "initializing" };
+    this.recorder = { state: "initializing" };
     this.renderStatusBar();
 
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-    this.recorder = recorder;
 
+    // Save the recording data as it comes in
     const blobParts: BlobPart[] = [];
+    recorder.addEventListener("dataavailable", (ev) => blobParts.push(ev.data));
 
     // A simple interval to reload the timer every second
     let interval: NodeJS.Timer | null = null;
 
+    // When the recorder starts, update the state and put the recorder into it
+    // so that it can be stopped from the handler again
     recorder.addEventListener(
       "start",
       () => {
-        this.recordingState = {
-          status: "recording",
+        this.recorder = {
+          state: "recording",
           startedAt: new Date().getTime(),
+          instance: recorder,
         };
         this.renderStatusBar();
 
@@ -83,25 +85,27 @@ export default class ExamplePlugin extends Plugin {
       { once: true },
     );
 
+    // The recorder has been stopped! Clean it up, release the recorder for use,
+    // and then save and process the file. This allows us to begin recording
+    // before we've finished transcribing an existing recording
     recorder.addEventListener(
       "stop",
       async () => {
+        this.recorder = { state: "closing" };
+        this.renderStatusBar();
+
         // We can stop the timer now, we've finished recording
         if (interval) {
           clearInterval(interval);
           interval = null;
         }
 
-        this.recordingState = { status: "closing" };
-        this.renderStatusBar();
-
         // Release mic and all resources from recorder
         recorder.stream.getTracks().forEach((track) => track.stop());
-        this.recorder = null;
 
         // Once we've released the recorder, now we enter the audio processing
         // pipeline. We can free up the recorder for use again
-        this.recordingState = { status: "idle" };
+        this.recorder = { state: "idle" };
         this.renderStatusBar();
 
         // Create blob
@@ -113,6 +117,7 @@ export default class ExamplePlugin extends Plugin {
           await blob.arrayBuffer(),
         );
 
+        // Experimental output to text content
         const editor =
           this.app.workspace.getActiveViewOfType(MarkdownView)?.editor;
         if (editor) {
@@ -127,8 +132,6 @@ export default class ExamplePlugin extends Plugin {
       },
       { once: true },
     );
-
-    recorder.addEventListener("dataavailable", (ev) => blobParts.push(ev.data));
 
     recorder.start();
   }
