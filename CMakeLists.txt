@@ -7,12 +7,20 @@ set(WHISPER_COREML ON CACHE INTERNAL "enable Core ML framework")
 set(WHISPER_COREML_ALLOW_FALLBACK ON CACHE INTERNAL "allow non-CoreML fallback")
 
 include(FetchContent)
+
 FetchContent_Declare(
-  whisper.cpp
+  whisper
   GIT_REPOSITORY https://github.com/ggerganov/whisper.cpp.git
   GIT_TAG v1.4.2
 )
-FetchContent_MakeAvailable(whisper.cpp)
+FetchContent_MakeAvailable(whisper)
+
+FetchContent_Declare(
+  dr_libs
+  GIT_REPOSITORY https://github.com/mackron/dr_libs
+  GIT_TAG e07e2b8264da5fa1331a0ca3d30a3606084c311f
+)
+FetchContent_Populate(dr_libs)
 
 add_definitions(-DNAPI_VERSION=4)
 include_directories(${CMAKE_JS_INC})
@@ -26,7 +34,8 @@ execute_process(COMMAND node -p "require('node-addon-api').include"
         )
 string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
-target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR})
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR} ${dr_libs_SOURCE_DIR})
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} whisper ${CMAKE_THREAD_LIBS_INIT})
 
