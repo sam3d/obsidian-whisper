@@ -21,12 +21,14 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(whisper)
 
 # Get wav parser dependency
-FetchContent_Declare(
-  dr_libs
-  GIT_REPOSITORY https://github.com/mackron/dr_libs
-  GIT_TAG e07e2b8264da5fa1331a0ca3d30a3606084c311f
+set(
+    DR_WAV_URL
+    "https://raw.githubusercontent.com/mackron/dr_libs/e07e2b8264da5fa1331a0ca3d30a3606084c311f/dr_wav.h"
 )
-FetchContent_Populate(dr_libs)
+set(DR_WAV_LOCATION "${CMAKE_BINARY_DIR}/includes/dr_wav.h")
+if(NOT EXISTS "${DR_WAV_LOCATION}")
+    file(DOWNLOAD "${DR_WAV_URL}" "${DR_WAV_LOCATION}")
+endif()
 
 # Load source files and set output mode
 add_library(${PROJECT_NAME} SHARED src/addon.cpp ${CMAKE_JS_SRC})
@@ -40,8 +42,8 @@ execute_process(COMMAND node -p "require('node-addon-api').include"
 string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 
-# dr_libs/dr_wav is a single file library, not a CMAKE project, so we include it as source
-target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR} ${dr_libs_SOURCE_DIR})
+# dr_wav is a single file header we downloaded, so we just include it
+target_include_directories(${PROJECT_NAME} PRIVATE ${NODE_ADDON_API_DIR} ${CMAKE_BINARY_DIR}/includes)
 
 # whisper.cpp is a CMAKE project, so we can just build it
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} whisper ${CMAKE_THREAD_LIBS_INIT})
