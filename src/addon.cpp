@@ -139,37 +139,11 @@ struct whisper_print_user_data {
     const std::vector<std::vector<float>> * pcmf32s;
 };
 
-//  500 -> 00:05.000
-// 6000 -> 01:00.000
-std::string to_timestamp(int64_t t, bool comma = false) {
-    int64_t msec = t * 10;
-    int64_t hr = msec / (1000 * 60 * 60);
-    msec = msec - hr * (1000 * 60 * 60);
-    int64_t min = msec / (1000 * 60);
-    msec = msec - min * (1000 * 60);
-    int64_t sec = msec / 1000;
-    msec = msec - sec * 1000;
-
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%02d:%02d:%02d%s%03d", (int) hr, (int) min, (int) sec, comma ? "," : ".", (int) msec);
-
-    return std::string(buf);
-}
-
-int timestamp_to_sample(int64_t t, int n_samples) {
-    return std::max(0, std::min((int) n_samples - 1, (int) ((t*WHISPER_SAMPLE_RATE)/100)));
-}
-
 void whisper_print_segment_callback(struct whisper_context * ctx, struct whisper_state * state, int n_new, void * user_data) {
     const auto & params  = *((whisper_print_user_data *) user_data)->params;
     const auto & pcmf32s = *((whisper_print_user_data *) user_data)->pcmf32s;
 
     const int n_segments = whisper_full_n_segments(ctx);
-
-    std::string speaker = "";
-
-    int64_t t0;
-    int64_t t1;
 
     // print the last n_new segments
     const int s0 = n_segments - n_new;
@@ -179,56 +153,13 @@ void whisper_print_segment_callback(struct whisper_context * ctx, struct whisper
     }
 
     for (int i = s0; i < n_segments; i++) {
-        if (!params.no_timestamps || params.diarize) {
-            t0 = whisper_full_get_segment_t0(ctx, i);
-            t1 = whisper_full_get_segment_t1(ctx, i);
-        }
-
-        if (!params.no_timestamps) {
-            printf("[%s --> %s]  ", to_timestamp(t0).c_str(), to_timestamp(t1).c_str());
-        }
-
-        if (params.diarize && pcmf32s.size() == 2) {
-            const int64_t n_samples = pcmf32s[0].size();
-
-            const int64_t is0 = timestamp_to_sample(t0, n_samples);
-            const int64_t is1 = timestamp_to_sample(t1, n_samples);
-
-            double energy0 = 0.0f;
-            double energy1 = 0.0f;
-
-            for (int64_t j = is0; j < is1; j++) {
-                energy0 += fabs(pcmf32s[0][j]);
-                energy1 += fabs(pcmf32s[1][j]);
-            }
-
-            if (energy0 > 1.1*energy1) {
-                speaker = "(speaker 0)";
-            } else if (energy1 > 1.1*energy0) {
-                speaker = "(speaker 1)";
-            } else {
-                speaker = "(speaker ?)";
-            }
-
-            //printf("is0 = %lld, is1 = %lld, energy0 = %f, energy1 = %f, %s\n", is0, is1, energy0, energy1, speaker.c_str());
-        }
-
-        // colorful print bug
-        //
         const char * text = whisper_full_get_segment_text(ctx, i);
-        printf("%s%s", speaker.c_str(), text);
-
-
-        // with timestamps or speakers: each segment on new line
-        if (!params.no_timestamps || params.diarize) {
-            printf("\n");
-        }
-
+        printf("%s", text);
         fflush(stdout);
     }
 }
 
-int run(whisper_params &params, std::vector<std::vector<std::string>> &result) {
+int run(whisper_params &params, std::string &result) {
     if (params.fname_inp.empty()) {
         fprintf(stderr, "error: no input files specified\n");
         return 2;
@@ -346,15 +277,9 @@ int run(whisper_params &params, std::vector<std::vector<std::string>> &result) {
     }
 
     const int n_segments = whisper_full_n_segments(ctx);
-    result.resize(n_segments);
     for (int i = 0; i < n_segments; ++i) {
         const char * text = whisper_full_get_segment_text(ctx, i);
-        const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
-        const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
-
-        result[i].emplace_back(to_timestamp(t0, true));
-        result[i].emplace_back(to_timestamp(t1, true));
-        result[i].emplace_back(text);
+        result.append(text);
     }
 
     whisper_print_timings(ctx);
@@ -374,20 +299,13 @@ public:
 
     void OnOK() override {
         Napi::HandleScope scope(Env());
-        Napi::Object res = Napi::Array::New(Env(), result.size());
-        for (uint64_t i = 0; i < result.size(); ++i) {
-            Napi::Object tmp = Napi::Array::New(Env(), 3);
-            for (uint64_t j = 0; j < 3; ++j) {
-                tmp[j] = Napi::String::New(Env(), result[i][j]);
-            }
-            res[i] = tmp;
-        }
-        Callback().Call({Env().Null(), res});
+        Napi::String res = Napi::String::New(Env(), result);
+        Callback().Call({res});
     }
 
 private:
     whisper_params params;
-    std::vector<std::vector<std::string>> result;
+    std::string result;
 };
 
 

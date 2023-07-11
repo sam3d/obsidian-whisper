@@ -3,9 +3,6 @@ const { whisper } = require(path.resolve(
   __dirname,
   "../build/Release/whisper-addon",
 ));
-const { promisify } = require("util");
-
-const whisperAsync = promisify(whisper);
 
 const whisperParams = {
   language: "en",
@@ -13,24 +10,6 @@ const whisperParams = {
   fname_inp: "/Users/sam/Desktop/sample.wav",
 };
 
-const arguments = process.argv.slice(2);
-const params = Object.fromEntries(
-  arguments.reduce((pre, item) => {
-    if (item.startsWith("--")) {
-      return [...pre, item.slice(2).split("=")];
-    }
-    return pre;
-  }, []),
-);
-
-for (const key in params) {
-  if (whisperParams.hasOwnProperty(key)) {
-    whisperParams[key] = params[key];
-  }
-}
-
-console.log("whisperParams =", whisperParams);
-
-whisperAsync(whisperParams).then((result) => {
-  console.log(`Result from whisper: ${result}`);
+whisper(whisperParams, (result) => {
+  console.log(`Result from whisper: "${result}"`);
 });
