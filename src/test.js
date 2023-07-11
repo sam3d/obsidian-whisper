@@ -1,7 +1,7 @@
 const path = require("path");
-const { whisper } = require(path.join(
+const { whisper } = require(path.resolve(
   __dirname,
-  "build/Release/whisper-addon",
+  "../build/Release/whisper-addon",
 ));
 const { promisify } = require("util");
 

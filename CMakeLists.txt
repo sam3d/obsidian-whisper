@@ -3,8 +3,8 @@ set (CMAKE_CXX_STANDARD 11)
 
 project(whisper-addon)
 
-set(WHISPER_COREML ON CACHE INTERNAL "enable Core ML framework")
-set(WHISPER_COREML_ALLOW_FALLBACK ON CACHE INTERNAL "allow non-CoreML fallback")
+set(WHISPER_COREML ON CACHE INTERNAL "Enable Core ML framework")
+set(WHISPER_COREML_ALLOW_FALLBACK ON CACHE INTERNAL "Allow non-CoreML fallback")
 
 include(FetchContent)
 
@@ -25,7 +25,7 @@ FetchContent_Populate(dr_libs)
 add_definitions(-DNAPI_VERSION=4)
 include_directories(${CMAKE_JS_INC})
 
-add_library(${PROJECT_NAME} SHARED ${CMAKE_JS_SRC} addon.cpp)
+add_library(${PROJECT_NAME} SHARED ${CMAKE_JS_SRC} src/addon.cpp)
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 
 execute_process(COMMAND node -p "require('node-addon-api').include"
